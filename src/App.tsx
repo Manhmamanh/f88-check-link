@@ -243,29 +243,29 @@ export default function App() {
     [persist, showToast],
   )
 
-  // ----- Chế độ review nhanh -----
+  // ----- Chế độ review nhanh (theo filter hiện tại) -----
   const startReview = useCallback(() => {
-    const idx = rows.findIndex((r) => !(verdicts[r.rowIndex] || ''))
-    setReviewIdx(idx >= 0 ? idx : rows.length > 0 ? 0 : null)
-  }, [rows, verdicts])
+    const idx = visibleRows.findIndex((r) => !(verdicts[r.rowIndex] || ''))
+    setReviewIdx(idx >= 0 ? idx : visibleRows.length > 0 ? 0 : null)
+  }, [visibleRows, verdicts])
 
-  const reviewRow = reviewIdx !== null ? rows[reviewIdx] : null
+  const reviewRow = reviewIdx !== null ? visibleRows[reviewIdx] : null
 
   const reviewVerdict = useCallback(
     (v: Verdict) => {
       if (reviewIdx === null || !reviewRow) return
       setVerdict(reviewRow.rowIndex, v)
-      // chuyển tới dòng chưa check kế tiếp (bỏ qua dòng vừa chấm)
-      for (let i = reviewIdx + 1; i < rows.length; i++) {
-        if (!(verdicts[rows[i].rowIndex] || '')) {
+      // chuyển tới dòng kế tiếp trong filter hiện tại
+      for (let i = reviewIdx + 1; i < visibleRows.length; i++) {
+        if (!(verdicts[visibleRows[i].rowIndex] || '')) {
           setReviewIdx(i)
           return
         }
       }
       setReviewIdx(null)
-      showToast('Đã review hết các dòng chưa check 🎉 — bấm "Copy cột J+K" để dán vào Sheet.')
+      showToast(`✅ Đã review hết filter "${filter}". Bấm "Copy cột J+K" để dán vào Sheet.`)
     },
-    [reviewIdx, reviewRow, rows, verdicts, setVerdict, showToast],
+    [reviewIdx, reviewRow, visibleRows, verdicts, setVerdict, showToast, filter],
   )
 
   useEffect(() => {
