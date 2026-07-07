@@ -279,14 +279,14 @@ export default function App() {
       else if (e.key === '4') reviewVerdict('LINK_SAI')
       else if (e.key === 'Enter' || e.key.toLowerCase() === 'o') {
         if (reviewRow?.link) window.open(reviewRow.link, '_blank', 'noopener')
-      } else if (e.key === 'ArrowRight') setReviewIdx((i) => (i !== null && i < rows.length - 1 ? i + 1 : i))
+      } else if (e.key === 'ArrowRight') setReviewIdx((i) => (i !== null && i < visibleRows.length - 1 ? i + 1 : i))
       else if (e.key === 'ArrowLeft') setReviewIdx((i) => (i !== null && i > 0 ? i - 1 : i))
       else return
       e.preventDefault()
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [reviewIdx, reviewRow, reviewVerdict, rows.length])
+  }, [reviewIdx, reviewRow, reviewVerdict, visibleRows.length])
 
   const reviewCheck = reviewRow ? checks.get(reviewRow.rowIndex) : undefined
 
@@ -538,7 +538,7 @@ export default function App() {
           <div className="review-card">
             <div className="review-head">
               <span>
-                Dòng <b>{reviewRow.stt}</b> · {reviewIdx! + 1}/{rows.length}
+                Dòng <b>{reviewRow.stt}</b> · {reviewIdx! + 1}/{visibleRows.length}
               </span>
               <button className="btn ghost" onClick={() => setReviewIdx(null)}>
                 ✕ Đóng (Esc)
