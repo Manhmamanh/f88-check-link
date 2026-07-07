@@ -51,7 +51,7 @@ export default function App() {
     toastTimer.current = window.setTimeout(() => setToast(''), 4000)
   }, [])
 
-  const handleAdminUpload = useCallback((data: Record<number, Verdict>) => {
+  const handleAdminUpload = useCallback(() => {
     showToast('✅ Kết quả đã được cập nhật!')
   }, [showToast])
 
@@ -635,12 +635,12 @@ export default function App() {
       {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} onUpload={handleAdminUpload} />}
 
       {toast && (
-        <div className=”toast” role=”status”>
+        <div className="toast" role="status">
           {toast}
         </div>
       )}
 
-      <footer className=”footer”>
+      <footer className="footer">
         Kết quả lưu tự động trên trình duyệt này. Cột K tự tính: “Hợp lệ” khi J = Hợp lệ, ngược lại “Không hợp lệ”.
       </footer>
     </div>

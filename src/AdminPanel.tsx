@@ -13,7 +13,7 @@ export default function AdminPanel({ onClose, onUpload }: AdminPanelProps) {
   const [message, setMessage] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const showMessage = (msg: string, type: 'success' | 'error') => {
+  const showMessage = (msg: string) => {
     setMessage(msg)
     setTimeout(() => setMessage(''), 4000)
   }
@@ -39,10 +39,10 @@ export default function AdminPanel({ onClose, onUpload }: AdminPanelProps) {
         // Call callback to update parent
         onUpload(data)
 
-        showMessage(`✅ Upload thành công! ${Object.keys(data).length} kết quả đã lưu.`, 'success')
+        showMessage(`✅ Upload thành công! ${Object.keys(data).length} kết quả đã lưu.`)
         setTimeout(() => onClose(), 1500)
       } catch (err) {
-        showMessage(`❌ Lỗi: ${err instanceof Error ? err.message : 'File không hợp lệ'}`, 'error')
+        showMessage(`❌ Lỗi: ${err instanceof Error ? err.message : 'File không hợp lệ'}`)
       } finally {
         setUploading(false)
         if (fileInputRef.current) fileInputRef.current.value = ''
@@ -71,7 +71,7 @@ export default function AdminPanel({ onClose, onUpload }: AdminPanelProps) {
   const handleClearCache = () => {
     if (confirm('Bạn chắc chắn muốn xóa dữ liệu đã upload?')) {
       localStorage.removeItem('linkcheck-results-uploaded')
-      showMessage('✅ Đã xóa dữ liệu cached', 'success')
+      showMessage('✅ Đã xóa dữ liệu cached')
     }
   }
 
@@ -87,7 +87,7 @@ export default function AdminPanel({ onClose, onUpload }: AdminPanelProps) {
           <section className="admin-section">
             <h3>📤 Upload File Kết Quả</h3>
             <p className="description">
-              Chọn file JSON chứa kết quả check link (format: {'{row_index: verdict}')
+              Chọn file JSON chứa kết quả check link (format: <code>{'{ "row_index": "verdict" }'}</code>)
             </p>
 
             <div className="upload-box">
