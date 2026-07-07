@@ -5,6 +5,8 @@ import type { AutoCheck, SheetRow, Verdict } from './types'
 import { jTextToVerdict, verdictToJ, verdictToK } from './types'
 import ResultsPage from './ResultsPage'
 import AdminPanel from './AdminPanel'
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore'
+import { db } from './firebase'
 
 const HASHTAG_DEFAULT = '@f88taichinhbinhdan'
 
@@ -55,9 +57,18 @@ export default function App() {
     showToast('✅ Kết quả đã được cập nhật!')
   }, [showToast])
 
-  const persist = useCallback((v: Record<number, Verdict>) => {
+  const persist = useCallback(async (v: Record<number, Verdict>) => {
     if (!sheetIdRef.current) return
+    // Lưu tạm vào localStorage
     localStorage.setItem(storageKey(sheetIdRef.current), JSON.stringify({ verdicts: v } satisfies Store))
+    
+    // Lưu lên Firestore
+    try {
+      const docRef = doc(db, 'sheets', sheetIdRef.current)
+      await setDoc(docRef, { verdicts: v }, { merge: true })
+    } catch (err) {
+      console.error('Lỗi khi lưu lên Firebase:', err)
+    }
   }, [])
 
   const setVerdict = useCallback(
@@ -79,8 +90,23 @@ export default function App() {
       if (!parsed) throw new Error('Link Google Sheet không đúng định dạng.')
       const data = await loadSheet(url)
       sheetIdRef.current = parsed.id
-      const store = loadStore(parsed.id)
-      // Kết quả đã lưu trên máy được ưu tiên; nếu chưa có thì lấy giá trị sẵn có ở cột J trên Sheet
+      
+      let store = loadStore(parsed.id)
+      
+      // Thử lấy dữ liệu từ Firestore trước
+      try {
+        const docRef = doc(db, 'sheets', parsed.id)
+        const docSnap = await getDoc(docRef)
+        if (docSnap.exists() && docSnap.data().verdicts) {
+          store = { verdicts: docSnap.data().verdicts }
+          // Cập nhật lại localStorage để đồng bộ
+          localStorage.setItem(storageKey(parsed.id), JSON.stringify(store))
+        }
+      } catch (err) {
+        console.warn('Không thể tải từ Firebase, dùng localStorage:', err)
+      }
+
+      // Kết quả đã lưu trên máy/Firebase được ưu tiên
       const initial: Record<number, Verdict> = {}
       for (const row of data) {
         const saved = store.verdicts[row.rowIndex]
@@ -101,6 +127,24 @@ export default function App() {
       setLoading(false)
     }
   }, [])
+
+  // Real-time listener
+  useEffect(() => {
+    if (!sheetIdRef.current) return
+    const docRef = doc(db, 'sheets', sheetIdRef.current)
+    const unsub = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists() && docSnap.data().verdicts) {
+        setVerdicts((prev) => {
+          // Chỉ cập nhật nếu có thay đổi để tránh re-render liên tục
+          const next = { ...prev, ...docSnap.data().verdicts }
+          return next
+        })
+      }
+    }, (error) => {
+      console.warn('Lỗi listener Firebase:', error)
+    })
+    return () => unsub()
+  }, [sheetUrl]) // Re-run when sheet changes
 
   useEffect(() => {
     load(DEFAULT_SHEET_URL)
