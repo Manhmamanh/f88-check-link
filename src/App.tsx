@@ -357,7 +357,13 @@ export default function App() {
             {rows.length > 0 && (
               <>
                 <section className="filter-detail">
-                  <span className="label">Chi tiết lỗi:</span>
+                  <span className="label">Chi tiết:</span>
+                  <button
+                    className={`filter-btn ${filter === 'VALID' ? 'active' : ''}`}
+                    onClick={() => setFilter('VALID')}
+                  >
+                    ✅ Hợp lệ ({rows.filter((r) => verdicts[r.rowIndex] === 'HOP_LE').length})
+                  </button>
                   <button
                     className={`filter-btn ${filter === 'LINK_SAI' ? 'active' : ''}`}
                     onClick={() => setFilter('LINK_SAI')}
@@ -375,6 +381,12 @@ export default function App() {
                     onClick={() => setFilter('THIEU_HASHTAG')}
                   >
                     ⚠️ Thiếu/sai hashtag ({rows.filter((r) => verdicts[r.rowIndex] === 'THIEU_HASHTAG').length})
+                  </button>
+                  <button
+                    className={`filter-btn ${filter === 'UNCHECKED' ? 'active' : ''}`}
+                    onClick={() => setFilter('UNCHECKED')}
+                  >
+                    ❓ Chưa check ({rows.filter((r) => !verdicts[r.rowIndex]).length})
                   </button>
                 </section>
 
