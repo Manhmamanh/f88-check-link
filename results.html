@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kết Quả Check Link — F88</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: #f5f5f5;
+        color: #333;
+      }
+      header {
+        background: linear-gradient(135deg, #00904a 0%, #005f35 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+      header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+      header p { opacity: 0.9; font-size: 1rem; }
+      .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+      .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+      }
+      .stat-card .number { font-size: 2rem; font-weight: bold; color: #00904a; }
+      .stat-card .label { font-size: 0.9rem; color: #666; margin-top: 0.5rem; }
+
+      .filters {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .filter-btn {
+        padding: 0.5rem 1rem;
+        border: 2px solid #ddd;
+        background: white;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+      }
+      .filter-btn:hover { border-color: #00904a; }
+      .filter-btn.active {
+        background: #00904a;
+        color: white;
+        border-color: #00904a;
+      }
+
+      .table-wrapper {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th {
+        background: #f8f8f8;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #eee;
+        font-size: 0.9rem;
+      }
+      td {
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+        font-size: 0.95rem;
+      }
+      tr:hover { background: #fafafa; }
+
+      .verdict {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+      .verdict-valid { background: #e8f5e9; color: #2e7d32; }
+      .verdict-unchecked { background: #e3f2fd; color: #1565c0; }
+      .verdict-invalid { background: #ffebee; color: #c62828; }
+      .verdict-private { background: #f3e5f5; color: #6a1b9a; }
+      .verdict-missing { background: #fff3e0; color: #e65100; }
+
+      .link-cell {
+        max-width: 300px;
+        word-break: break-all;
+        font-size: 0.85rem;
+      }
+      .link-cell a {
+        color: #00904a;
+        text-decoration: none;
+      }
+      .link-cell a:hover { text-decoration: underline; }
+
+      .search {
+        margin-bottom: 1.5rem;
+        display: flex;
+        gap: 0.5rem;
+      }
+      .search input {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+      }
+
+      .empty { text-align: center; padding: 2rem; color: #999; }
+
+      .loading {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+      }
+
+      @media (max-width: 768px) {
+        header h1 { font-size: 1.5rem; }
+        table { font-size: 0.85rem; }
+        th, td { padding: 0.75rem 0.5rem; }
+        .link-cell { max-width: 200px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>✓ Kết Quả Check Link — F88</h1>
+      <p>Danh sách các link ghi nhận đã check</p>
+    </header>
+
+    <div class="container">
+      <div class="stats" id="stats"></div>
+
+      <div class="search">
+        <input type="text" id="searchInput" placeholder="Tìm theo tên nhân viên, mã NV, link...">
+      </div>
+
+      <div class="filters">
+        <button class="filter-btn active" data-filter="ALL">Tất cả</button>
+        <button class="filter-btn" data-filter="HOP_LE">✅ Hợp lệ</button>
+        <button class="filter-btn" data-filter="THIEU_HASHTAG">⚠️ Thiếu/sai hashtag</button>
+        <button class="filter-btn" data-filter="KHONG_CONG_KHAI">🔒 Không công khai</button>
+        <button class="filter-btn" data-filter="LINK_SAI">🚫 Link sai</button>
+        <button class="filter-btn" data-filter="UNCHECKED">❓ Chưa check</button>
+      </div>
+
+      <div class="table-wrapper">
+        <div id="loading" class="loading">⏳ Đang tải dữ liệu...</div>
+        <div id="content" style="display: none;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 60px;">STT</th>
+                <th style="width: 150px;">Nhân viên</th>
+                <th style="width: 300px;">Link</th>
+                <th style="width: 120px;">Kết quả</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+        <div id="empty" class="empty" style="display: none;">
+          Không có kết quả phù hợp
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1pg-C-YwjNFYATcJFHnIRKdV-C5J_Y5sL37uvxj3gcpc/edit?usp=sharing';
+      const RESULTS_FILE = '/f88-check-link/check-results-final.json';
+      const GVIZ_URL = 'https://docs.google.com/spreadsheets/d/1pg-C-YwjNFYATcJFHnIRKdV-C5J_Y5sL37uvxj3gcpc/gviz/query?tqx=out:json';
+
+      let allRows = [];
+      let results = {};
+      let currentFilter = 'ALL';
+      let searchQuery = '';
+
+      async function loadData() {
+        try {
+          // Load sheet data
+          const sheetRes = await fetch(GVIZ_URL);
+          const sheetText = await sheetRes.text();
+          const match = sheetText.match(/\((.*)\)$/s);
+          if (!match) throw new Error('Invalid sheet data');
+          const data = JSON.parse(match[1]);
+          const rows = data.table.rows || [];
+
+          allRows = rows.map((r, idx) => {
+            const c = r.c || [];
+            return {
+              rowIndex: idx + 2,
+              stt: c[0]?.v || '',
+              maNV: c[1]?.v || '',
+              hoTen: c[2]?.v || '',
+              khoi: c[3]?.v || '',
+              link: c[8]?.v || '',
+            };
+          }).filter(r => r.link);
+
+          // Load results
+          const resultsRes = await fetch(RESULTS_FILE);
+          results = await resultsRes.json();
+
+          updateStats();
+          render();
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('content').style.display = '';
+        } catch (e) {
+          console.error('Lỗi tải dữ liệu:', e);
+          document.getElementById('loading').innerHTML = '❌ Lỗi tải dữ liệu: ' + e.message;
+        }
+      }
+
+      function getVerdict(rowIndex) {
+        return results[rowIndex] || '';
+      }
+
+      function updateStats() {
+        let valid = 0, invalid = 0, unchecked = 0, private_ = 0, missing = 0;
+        for (const row of allRows) {
+          const v = getVerdict(row.rowIndex);
+          if (v === 'HOP_LE') valid++;
+          else if (v === 'LINK_SAI') invalid++;
+          else if (v === 'KHONG_CONG_KHAI') private_++;
+          else if (v === 'THIEU_HASHTAG') missing++;
+          else unchecked++;
+        }
+
+        document.getElementById('stats').innerHTML = `
+          <div class="stat-card">
+            <div class="number">${allRows.length}</div>
+            <div class="label">Tổng link</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${valid}</div>
+            <div class="label">✅ Hợp lệ</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${missing}</div>
+            <div class="label">⚠️ Thiếu hashtag</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${private_}</div>
+            <div class="label">🔒 Không công khai</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${invalid}</div>
+            <div class="label">🚫 Link sai</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${unchecked}</div>
+            <div class="label">❓ Chưa check</div>
+          </div>
+        `;
+      }
+
+      function getVerdictLabel(v) {
+        if (v === 'HOP_LE') return '✅ Hợp lệ';
+        if (v === 'THIEU_HASHTAG') return '⚠️ Thiếu/sai hashtag';
+        if (v === 'KHONG_CONG_KHAI') return '🔒 Không công khai';
+        if (v === 'LINK_SAI') return '🚫 Link sai';
+        return '❓ Chưa check';
+      }
+
+      function getVerdictClass(v) {
+        if (v === 'HOP_LE') return 'verdict-valid';
+        if (v === 'THIEU_HASHTAG') return 'verdict-missing';
+        if (v === 'KHONG_CONG_KHAI') return 'verdict-private';
+        if (v === 'LINK_SAI') return 'verdict-invalid';
+        return 'verdict-unchecked';
+      }
+
+      function render() {
+        let filtered = allRows.filter(row => {
+          const v = getVerdict(row.rowIndex);
+          const filterV = currentFilter === 'UNCHECKED' ? '' : currentFilter;
+
+          if (currentFilter !== 'ALL' && v !== filterV) return false;
+
+          if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            const hay = `${row.stt} ${row.maNV} ${row.hoTen} ${row.khoi} ${row.link}`.toLowerCase();
+            if (!hay.includes(q)) return false;
+          }
+
+          return true;
+        });
+
+        const tableBody = document.getElementById('tableBody');
+        const empty = document.getElementById('empty');
+        const content = document.getElementById('content');
+
+        if (filtered.length === 0) {
+          tableBody.innerHTML = '';
+          content.style.display = 'none';
+          empty.style.display = 'block';
+          return;
+        }
+
+        content.style.display = '';
+        empty.style.display = 'none';
+        tableBody.innerHTML = filtered.map(row => {
+          const v = getVerdict(row.rowIndex);
+          return `
+            <tr>
+              <td>${row.stt}</td>
+              <td>
+                <strong>${row.hoTen}</strong><br>
+                <small style="color: #999;">${row.maNV} · ${row.khoi}</small>
+              </td>
+              <td class="link-cell">
+                <a href="${row.link}" target="_blank" rel="noopener">
+                  ${row.link.length > 60 ? row.link.substring(0, 60) + '…' : row.link}
+                </a>
+              </td>
+              <td>
+                <span class="verdict ${getVerdictClass(v)}">
+                  ${getVerdictLabel(v)}
+                </span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // Event listeners
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+          currentFilter = e.target.dataset.filter;
+          render();
+        });
+      });
+
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        searchQuery = e.target.value;
+        render();
+      });
+
+      // Load data on page load
+      loadData();
+    </script>
+  </body>
+</html>
