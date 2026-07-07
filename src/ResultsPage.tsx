@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import './ResultsPage.css'
 
-interface Row {
+type Verdict = 'HOP_LE' | 'THIEU_HASHTAG' | 'KHONG_CONG_KHAI' | 'LINK_SAI' | ''
+type Filter = 'ALL' | 'HOP_LE' | 'THIEU_HASHTAG' | 'KHONG_CONG_KHAI' | 'LINK_SAI' | 'UNCHECKED'
+
+const RESULTS_FILE = '/check-results-final.json'
+const SHEET_ID = '1pg-C-YwjNFYATcJFHnIRKdV-C5J_Y5sL37uvxj3gcpc'
+const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1`
+
+interface RowData {
   rowIndex: number
   stt: string
   maNV: string
@@ -10,15 +17,8 @@ interface Row {
   link: string
 }
 
-type Verdict = 'HOP_LE' | 'THIEU_HASHTAG' | 'KHONG_CONG_KHAI' | 'LINK_SAI' | ''
-type Filter = 'ALL' | 'HOP_LE' | 'THIEU_HASHTAG' | 'KHONG_CONG_KHAI' | 'LINK_SAI' | 'UNCHECKED'
-
-const SHEET_ID = '1pg-C-YwjNFYATcJFHnIRKdV-C5J_Y5sL37uvxj3gcpc'
-const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1`
-const RESULTS_FILE = '/f88-check-link/check-results-final.json'
-
 export default function ResultsPage() {
-  const [allRows, setAllRows] = useState<Row[]>([])
+  const [allRows, setAllRows] = useState<RowData[]>([])
   const [results, setResults] = useState<Record<number, Verdict>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -28,38 +28,57 @@ export default function ResultsPage() {
   useEffect(() => {
     async function load() {
       try {
-        // Load sheet data
-        const sheetRes = await fetch(GVIZ_URL)
-        if (!sheetRes.ok) throw new Error(`HTTP ${sheetRes.status}`)
-        const sheetText = await sheetRes.text()
-        const start = sheetText.indexOf('(')
-        const end = sheetText.lastIndexOf(')')
-        if (start < 0 || end < 0) throw new Error('Invalid response format')
-        const data = JSON.parse(sheetText.slice(start + 1, end))
-        if (data.status === 'error') throw new Error(data.errors?.[0] || 'Sheet error')
-        const rows = data.table?.rows || []
-        if (rows.length === 0) throw new Error('No data in sheet')
-
-        const processedRows = rows
-          .map((r: any, idx: number) => {
-            const c = r.c || []
-            return {
-              rowIndex: idx + 2,
-              stt: c[0]?.v || '',
-              maNV: c[1]?.v || '',
-              hoTen: c[2]?.v || '',
-              khoi: c[3]?.v || '',
-              link: c[8]?.v || '',
-            }
-          })
-          .filter((r: Row) => r.link)
-
-        setAllRows(processedRows)
-
-        // Load results
+        // Load results file first (most important)
         const resultsRes = await fetch(RESULTS_FILE)
-        const resultsData = await resultsRes.json()
+        if (!resultsRes.ok) throw new Error('Cannot load results file')
+        const resultsData: Record<number, Verdict> = await resultsRes.json()
         setResults(resultsData)
+
+        // Try to load sheet data, but don't fail if it doesn't work
+        try {
+          const sheetRes = await fetch(GVIZ_URL)
+          if (!sheetRes.ok) throw new Error('Sheet fetch failed')
+          const sheetText = await sheetRes.text()
+          const start = sheetText.indexOf('(')
+          const end = sheetText.lastIndexOf(')')
+          if (start < 0 || end < 0) throw new Error('Invalid format')
+          const data = JSON.parse(sheetText.slice(start + 1, end))
+          if (data.status === 'error') throw new Error('Sheet error')
+          const rows = data.table?.rows || []
+
+          const processedRows = rows
+            .map((r: any, idx: number) => {
+              const c = r.c || []
+              return {
+                rowIndex: idx + 2,
+                stt: c[0]?.v || idx + 1,
+                maNV: c[1]?.v || '',
+                hoTen: c[2]?.v || '',
+                khoi: c[3]?.v || '',
+                link: c[8]?.v || '',
+              } as RowData
+            })
+            .filter((r: RowData) => r.link && resultsData[r.rowIndex] !== undefined)
+
+          setAllRows(processedRows)
+        } catch (e) {
+          // If sheet fetch fails, create minimal rows from results
+          const minimalRows = Object.entries(resultsData)
+            .map(([rowStr]) => {
+              const rowIndex = parseInt(rowStr, 10)
+              return {
+                rowIndex,
+                stt: rowIndex.toString(),
+                maNV: '',
+                hoTen: 'Nhân viên #' + rowIndex,
+                khoi: '',
+                link: '(Dữ liệu không tải được)',
+              } as RowData
+            })
+            .slice(0, 100) // Limit to first 100 rows
+
+          setAllRows(minimalRows)
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Lỗi không xác định')
       } finally {
