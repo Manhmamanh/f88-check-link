@@ -3,6 +3,7 @@ import './App.css'
 import { DEFAULT_SHEET_URL, autoCheckRows, loadSheet, parseSheetUrl } from './sheet'
 import type { AutoCheck, SheetRow, Verdict } from './types'
 import { jTextToVerdict, verdictToJ, verdictToK } from './types'
+import ResultsPage from './ResultsPage'
 
 const HASHTAG_DEFAULT = '@f88taichinhbinhdan'
 
@@ -38,6 +39,7 @@ export default function App() {
   const [search, setSearch] = useState('')
   const [reviewIdx, setReviewIdx] = useState<number | null>(null) // vị trí trong danh sách rows
   const [toast, setToast] = useState('')
+  const [view, setView] = useState<'checker' | 'results'>('checker')
   const sheetIdRef = useRef('')
   const toastTimer = useRef<number>(0)
 
@@ -290,6 +292,19 @@ export default function App() {
 
   const reviewCheck = reviewRow ? checks.get(reviewRow.rowIndex) : undefined
 
+  if (view === 'results') {
+    return (
+      <>
+        <ResultsPage />
+        <div style={{ textAlign: 'center', padding: '1rem' }}>
+          <button className="btn" onClick={() => setView('checker')}>
+            ← Quay lại Checker
+          </button>
+        </div>
+      </>
+    )
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -305,6 +320,9 @@ export default function App() {
             <label htmlFor="hashtag">Hashtag/tag bắt buộc</label>
             <input id="hashtag" value={hashtag} onChange={(e) => setHashtag(e.target.value)} />
           </div>
+          <button className="btn" onClick={() => setView('results')}>
+            📊 Xem Kết Quả
+          </button>
         </div>
       </header>
 
