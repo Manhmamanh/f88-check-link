@@ -189,6 +189,26 @@ export default function App() {
     URL.revokeObjectURL(a.href)
   }, [rows, verdicts])
 
+  const exportByVerdictType = useCallback(
+    (verdictType: Verdict, filename: string) => {
+      const items = rows.filter((r) => verdicts[r.rowIndex] === verdictType).map((row) => ({
+        row: row.rowIndex,
+        stt: row.stt,
+        ma_nv: row.maNV,
+        ho_ten: row.hoTen,
+        link: row.link,
+      }))
+      const blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json;charset=utf-8' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(a.href)
+      showToast(`✅ Đã tải ${items.length} link.`)
+    },
+    [rows, verdicts, showToast],
+  )
+
   const importCheck = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
@@ -335,27 +355,54 @@ export default function App() {
             </section>
 
             {rows.length > 0 && (
-              <section className="filter-detail">
-                <span className="label">Chi tiết lỗi:</span>
-                <button
-                  className={`filter-btn ${filter === 'LINK_SAI' ? 'active' : ''}`}
-                  onClick={() => setFilter('LINK_SAI')}
-                >
-                  🚫 Link sai ({rows.filter((r) => verdicts[r.rowIndex] === 'LINK_SAI').length})
-                </button>
-                <button
-                  className={`filter-btn ${filter === 'KHONG_CONG_KHAI' ? 'active' : ''}`}
-                  onClick={() => setFilter('KHONG_CONG_KHAI')}
-                >
-                  🔒 Không công khai ({rows.filter((r) => verdicts[r.rowIndex] === 'KHONG_CONG_KHAI').length})
-                </button>
-                <button
-                  className={`filter-btn ${filter === 'THIEU_HASHTAG' ? 'active' : ''}`}
-                  onClick={() => setFilter('THIEU_HASHTAG')}
-                >
-                  ⚠️ Thiếu/sai hashtag ({rows.filter((r) => verdicts[r.rowIndex] === 'THIEU_HASHTAG').length})
-                </button>
-              </section>
+              <>
+                <section className="filter-detail">
+                  <span className="label">Chi tiết lỗi:</span>
+                  <button
+                    className={`filter-btn ${filter === 'LINK_SAI' ? 'active' : ''}`}
+                    onClick={() => setFilter('LINK_SAI')}
+                  >
+                    🚫 Link sai ({rows.filter((r) => verdicts[r.rowIndex] === 'LINK_SAI').length})
+                  </button>
+                  <button
+                    className={`filter-btn ${filter === 'KHONG_CONG_KHAI' ? 'active' : ''}`}
+                    onClick={() => setFilter('KHONG_CONG_KHAI')}
+                  >
+                    🔒 Không công khai ({rows.filter((r) => verdicts[r.rowIndex] === 'KHONG_CONG_KHAI').length})
+                  </button>
+                  <button
+                    className={`filter-btn ${filter === 'THIEU_HASHTAG' ? 'active' : ''}`}
+                    onClick={() => setFilter('THIEU_HASHTAG')}
+                  >
+                    ⚠️ Thiếu/sai hashtag ({rows.filter((r) => verdicts[r.rowIndex] === 'THIEU_HASHTAG').length})
+                  </button>
+                </section>
+
+                <section className="export-detail">
+                  <span className="label">Tải danh sách:</span>
+                  <button
+                    className="export-btn"
+                    onClick={() => exportByVerdictType('HOP_LE', 'links-valid.json')}
+                    title={`${rows.filter((r) => verdicts[r.rowIndex] === 'HOP_LE').length} link hợp lệ`}
+                  >
+                    ✅ Hợp lệ ({rows.filter((r) => verdicts[r.rowIndex] === 'HOP_LE').length})
+                  </button>
+                  <button
+                    className="export-btn"
+                    onClick={() => exportByVerdictType('', 'links-todo.json')}
+                    title={`${rows.filter((r) => !verdicts[r.rowIndex]).length} link chưa check`}
+                  >
+                    ❓ Chưa check ({rows.filter((r) => !verdicts[r.rowIndex]).length})
+                  </button>
+                  <button
+                    className="export-btn"
+                    onClick={() => exportByVerdictType('LINK_SAI', 'links-bad.json')}
+                    title={`${rows.filter((r) => verdicts[r.rowIndex] === 'LINK_SAI').length} link sai`}
+                  >
+                    🚫 Link sai ({rows.filter((r) => verdicts[r.rowIndex] === 'LINK_SAI').length})
+                  </button>
+                </section>
+              </>
             )}
 
             <section className="toolbar">
