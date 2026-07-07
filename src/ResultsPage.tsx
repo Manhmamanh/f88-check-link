@@ -28,7 +28,15 @@ export default function ResultsPage() {
   useEffect(() => {
     async function load() {
       try {
-        // Load results file first (most important)
+        // Try to load from localStorage first
+        const cached = localStorage.getItem('linkcheck-results-uploaded')
+        if (cached) {
+          const resultsData: Record<number, Verdict> = JSON.parse(cached)
+          setResults(resultsData)
+          return
+        }
+
+        // Fallback to load results file
         const resultsRes = await fetch(RESULTS_FILE)
         if (!resultsRes.ok) throw new Error('Cannot load results file')
         const resultsData: Record<number, Verdict> = await resultsRes.json()

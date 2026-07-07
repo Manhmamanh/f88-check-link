@@ -4,6 +4,7 @@ import { DEFAULT_SHEET_URL, autoCheckRows, loadSheet, parseSheetUrl } from './sh
 import type { AutoCheck, SheetRow, Verdict } from './types'
 import { jTextToVerdict, verdictToJ, verdictToK } from './types'
 import ResultsPage from './ResultsPage'
+import AdminPanel from './AdminPanel'
 
 const HASHTAG_DEFAULT = '@f88taichinhbinhdan'
 
@@ -40,6 +41,7 @@ export default function App() {
   const [reviewIdx, setReviewIdx] = useState<number | null>(null) // vị trí trong danh sách rows
   const [toast, setToast] = useState('')
   const [view, setView] = useState<'checker' | 'results'>('checker')
+  const [showAdmin, setShowAdmin] = useState(false)
   const sheetIdRef = useRef('')
   const toastTimer = useRef<number>(0)
 
@@ -48,6 +50,10 @@ export default function App() {
     window.clearTimeout(toastTimer.current)
     toastTimer.current = window.setTimeout(() => setToast(''), 4000)
   }, [])
+
+  const handleAdminUpload = useCallback((data: Record<number, Verdict>) => {
+    showToast('✅ Kết quả đã được cập nhật!')
+  }, [showToast])
 
   const persist = useCallback((v: Record<number, Verdict>) => {
     if (!sheetIdRef.current) return
@@ -295,10 +301,14 @@ export default function App() {
   if (view === 'results') {
     return (
       <>
+        {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} onUpload={handleAdminUpload} />}
         <ResultsPage />
         <div style={{ textAlign: 'center', padding: '1rem' }}>
           <button className="btn" onClick={() => setView('checker')}>
             ← Quay lại Checker
+          </button>
+          <button className="btn btn-admin" onClick={() => setShowAdmin(true)} style={{ marginLeft: '0.5rem' }}>
+            ⚙️ Admin
           </button>
         </div>
       </>
@@ -320,9 +330,14 @@ export default function App() {
             <label htmlFor="hashtag">Hashtag/tag bắt buộc</label>
             <input id="hashtag" value={hashtag} onChange={(e) => setHashtag(e.target.value)} />
           </div>
-          <button className="btn" onClick={() => setView('results')}>
-            📊 Xem Kết Quả
-          </button>
+          <div className="header-buttons">
+            <button className="btn" onClick={() => setView('results')}>
+              📊 Xem Kết Quả
+            </button>
+            <button className="btn btn-admin" onClick={() => setShowAdmin(true)}>
+              ⚙️ Admin
+            </button>
+          </div>
         </div>
       </header>
 
@@ -617,13 +632,15 @@ export default function App() {
         </div>
       )}
 
+      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} onUpload={handleAdminUpload} />}
+
       {toast && (
-        <div className="toast" role="status">
+        <div className=”toast” role=”status”>
           {toast}
         </div>
       )}
 
-      <footer className="footer">
+      <footer className=”footer”>
         Kết quả lưu tự động trên trình duyệt này. Cột K tự tính: “Hợp lệ” khi J = Hợp lệ, ngược lại “Không hợp lệ”.
       </footer>
     </div>
